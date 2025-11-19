@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>آزمایشگاه مجموعه‌ها</title>
+<style>
+body{font-family:'Tahoma',sans-serif; background:#e3f2fd; color:#222; margin:0; padding:20px; direction:rtl;}
+h1,h2,h3{margin:10px 0;}
+button{margin:5px; padding:8px 12px; font-size:16px; border:none; border-radius:6px; cursor:pointer; background:#1976d2; color:white; transition:0.3s;}
+button:hover{background:#0d47a1;}
+canvas{background:#e3f2fd; margin-top:10px; display:block;}
+.hidden{display:none;}
+.animate-symbols span{display:inline-block; font-size:36px; margin:0 8px; animation: bounce 1s infinite;}
+@keyframes bounce {0%,100%{transform:translateY(0);}50%{transform:translateY(-15px);}}
+.input-box{margin:10px 0;}
+.result-box{background:white; border-radius:10px; padding:15px; margin-top:10px; box-shadow:0 2px 6px rgba(0,0,0,0.1);}
+.profile-img{width:50px; height:50px; border-radius:50%; cursor:pointer;}
+.question-box{background:#fff; padding:15px; border-radius:8px; margin-top:10px; box-shadow:0 2px 6px rgba(0,0,0,0.1);}
+</style>
+</head>
+<body>
+
+<!-- صفحه اول -->
+<div id="page1">
+  <h1>آزمایشگاه مجموعه‌ها</h1>
+  <div class="animate-symbols">
+    <span>+</span><span>-</span><span>×</span><span>÷</span>
+  </div>
+</div>
+
+<!-- صفحه دوم -->
+<div id="page2" class="hidden">
+  <h2>پروفایل کاربر</h2>
+  <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAAKklEQVRoge3BMQEAAADCoPdPbQ43oAAAAAAAAAAAAAAAAAAAAAAA4H4FtwAAAcQt23cAAAAASUVORK5CYII=" class="profile-img" id="profilePic">
+  <div class="input-box">
+    نام: <input type="text" id="firstName" placeholder="نام"><br>
+    نام خانوادگی: <input type="text" id="lastName" placeholder="نام خانوادگی"><br>
+  </div>
+  <button onclick="saveProfile()">ذخیره</button>
+</div>
+
+<!-- صفحه سوم -->
+<div id="page3" class="hidden">
+  <h2>تعریف مجموعه A</h2>
+  <label>عضو کدام مجموعه شناخته شده است؟</label>
+  <select id="knownSet">
+    <option value="">انتخاب کنید...</option>
+    <option value="N">N (اعداد طبیعی)</option>
+    <option value="W">W (اعداد شمارشی)</option>
+    <option value="Z">Z (اعداد صحیح)</option>
+    <option value="Q">Q (اعداد گویا)</option>
+    <option value="I">I (اعداد گنگ)</option>
+    <option value="R">R (اعداد حقیقی)</option>
+  </select>
+  <div class="input-box">
+    شرط را به صورت کلامی بنویسید:<br>
+    <input type="text" id="textCondition" placeholder="مثلاً بزرگتر مساوی 3">
+  </div>
+  <button onclick="makeExpression()">نمایش نماد ریاضی</button>
+  <div id="mathResult" class="result-box"></div>
+  <button onclick="showMembers()">نمایش اعضا</button>
+  <div id="membersBox" class="result-box"></div>
+  <button onclick="showVenn()">نمایش نمودار ون</button>
+  <canvas id="vennCanvas" width="400" height="200"></canvas>
+  <button onclick="showAxis()">نمایش محور</button>
+  <canvas id="axisCanvas" width="400" height="100"></canvas>
+</div>
+
+<!-- صفحه چهارم -->
+<div id="page4" class="hidden">
+  <h2>انجام عملیات ریاضی روی مجموعه‌ها</h2>
+  <div class="input-box">
+    نوع نمایش اعضا: 
+    <select id="memberDisplayType">
+      <option value="list">نوشتن اعضا</option>
+      <option value="math">نماد ریاضی</option>
+    </select>
+  </div>
+  <div id="operationArea" class="result-box"></div>
+  <div id="questionArea" class="question-box"></div>
+</div>
+
+<script>
+// مدیریت صفحات
+let currentPage = 1;
+function showPage(n){
+  for(let i=1;i<=4;i++) document.getElementById('page'+i).classList.add('hidden');
+  document.getElementById('page'+n).classList.remove('hidden');
+  currentPage=n;
+}
+setTimeout(()=>{ showPage(2); }, 3000); // بعد از 3 ثانیه به صفحه 2
+
+// ذخیره پروفایل
+function saveProfile(){
+  localStorage.setItem('firstName', document.getElementById('firstName').value);
+  localStorage.setItem('lastName', document.getElementById('lastName').value);
+  alert('ذخیره شد');
+  showPage(3);
+}
+
+// تبدیل شرط کلامی به ریاضی
+function convertCondition(cond){
+  let c = cond.replace(/بزرگتر مساوی/gi, '≥')
+              .replace(/کوچکتر مساوی/gi, '≤')
+              .replace(/بزرگتر/gi, '>')
+              .replace(/کوچکتر/gi, '<')
+              .replace(/مساوی/gi, '=');
+  c = c.replace(/و/gi, ',');
+  return c;
+}
+function makeExpression(){
+  let set = document.getElementById('knownSet').value;
+  let cond = document.getElementById('textCondition').value.trim();
+  if(!set||!cond){ alert('لطفاً همه فیلدها را پر کنید'); return;}
+  let expression=`{ x ∈ ${set} | ${convertCondition(cond)} }`;
+  document.getElementById('mathResult').innerText=expression;
+}
+// نمایش اعضا
+function showMembers(){
+  let set = document.getElementById('knownSet').value;
+  let box = document.getElementById('membersBox');
+  if(set==='N') box.innerText='{1,2,3,...}';
+  else if(set==='W') box.innerText='{0,1,2,...}';
+  else if(set==='Z') box.innerText='{..., -2,-1,0,1,2,...}';
+  else box.innerText='نامتناهی یا گویا/گونگ/حقیقی است، نمودار نمی‌توان نمایش داد.';
+}
+// نمودار ون
+function showVenn(){
+  const canvas=document.getElementById('vennCanvas');
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  let cx=canvas.width/2, cy=canvas.height/2, r=50, angle=0;
+  function animate(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.beginPath();
+    ctx.arc(cx,cy,r*angle/100,0,2*Math.PI*angle/100);
+    ctx.strokeStyle='blue';
+    ctx.lineWidth=3;
+    ctx.stroke();
+    angle++; if(angle<=100) requestAnimationFrame(animate);
+  }
+  animate();
+}
+// محور عددی ساده
+function showAxis(){
+  const canvas=document.getElementById('axisCanvas');
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  let startX=50,endX=canvas.width-50,y=50;
+  ctx.beginPath(); ctx.moveTo(startX,y); ctx.lineTo(endX,y); ctx.strokeStyle='black'; ctx.lineWidth=2; ctx.stroke();
+  [-5,-4,-3,-2,-1,0,1,2,3,4,5].forEach((num,i)=>{
+    ctx.beginPath(); ctx.arc(startX+i*30,y,5,0,2*Math.PI); ctx.fillStyle='black'; ctx.fill();
+    ctx.fillText(num,startX+i*30-5,y+15);
+  });
+}
+</script>
+</body>
+</html>
